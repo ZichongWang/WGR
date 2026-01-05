@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+
+*.pth
+*.out
+grid_runs/
+grid_results.md

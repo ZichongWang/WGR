@@ -170,47 +170,18 @@ def train_WGR_fnn(D, G, D_solver, G_solver, loader_train, loader_val, noise_dim,
             # Increment iteration counter
             iter_count += 1
 
-
-            # Validate and save best model
-            if (iter_count >= start_eva) and (iter_count % eva_iter == 0):
-                l1_acc, l2_acc = val_G(G=G, loader_data=loader_val, noise_dim=noise_dim, Xdim=Xdim,  Ydim=Ydim, distribution=noise_distribution , mu=noise_mu, cov=noise_cov, a=noise_a, b=noise_b, loc=noise_loc, scale=noise_scale, num_samples=num_samples, device=device,  multivariate=multivariate )
-                
-                print(f"Epoch {epoch}, Iter {iter_count}, "
-                      f"D Loss: {np.mean(d_losses):.4f}, G Loss: {np.mean(g_losses):.4f}, "
-                      f"L1: {l1_acc:.4f}, L2: {l2_acc:.4f}")
-                
-                # Save model if validation improves
-                if (save_last ==False) and (l2_acc < best_acc):
-                    best_acc = l2_acc
-                    best_model_g = copy.deepcopy(G.state_dict())
-                    best_model_d = copy.deepcopy(D.state_dict())
-
-                    # Save models
-                    torch.save(G.state_dict(), f"{save_path}/G_"+model_type+"_d"+str(Xdim)+"_m"+str(noise_dim)+"_best.pth")
-                    torch.save(D.state_dict(), f"{save_path}/D_"+model_type+"_d"+str(Xdim)+"_m"+str(noise_dim)+"_best.pth")
-                    print(f"Saved best model with L2: {best_acc:.4f}")
-
-                # for multivariate model, conduct the visulaization
-                if is_plot:
-                    if (iter_count % plot_iter == 0): 
-                        generate_Y = torch.zeros([1000,2]) #generate 500 response 
-                        for i in range(1000):
-                            plot_eta = sample_noise(1, dim = noise_dim, distribution=noise_distribution ,
-                                                    mu=noise_mu, cov=noise_cov, a=noise_a, b=noise_b, loc=noise_loc, scale=noise_scale).to(device)
-                            plot_input =  torch.cat([torch.tensor([[1]]), plot_eta], dim=1)
-                            generate_Y[i] = G(plot_input)
-                        fig, ax = plot_kde_2d(generate_Y.detach(),title=f"Epoch {epoch} Distribution")
-                        plt.show()
-                        plt.close()
-                        
-            
-        
-        # Also update best model for multivariate case
-        if l2_acc < best_acc:
+        # Per-epoch validation/checkpointing
+        l1_acc, l2_acc = val_G(G=G, loader_data=loader_val, noise_dim=noise_dim, Xdim=Xdim,  Ydim=Ydim, distribution=noise_distribution , mu=noise_mu, cov=noise_cov, a=noise_a, b=noise_b, loc=noise_loc, scale=noise_scale, num_samples=num_samples, device=device,  multivariate=multivariate )
+        print(f"Epoch {epoch}, Iter {iter_count}, "
+              f"D Loss: {np.mean(d_losses):.4f}, G Loss: {np.mean(g_losses):.4f}, "
+              f"L1: {l1_acc:.4f}, L2: {l2_acc:.4f}")
+        if (save_last == False) and (l2_acc < best_acc):
             best_acc = l2_acc
             best_model_g = copy.deepcopy(G.state_dict())
             best_model_d = copy.deepcopy(D.state_dict())
-            print(f"New best multivariate model with L2: {best_acc:.4f}")
+            torch.save(G.state_dict(), f"{save_path}/G_"+model_type+"_d"+str(Xdim)+"_m"+str(noise_dim)+"_best.pth")
+            torch.save(D.state_dict(), f"{save_path}/D_"+model_type+"_d"+str(Xdim)+"_m"+str(noise_dim)+"_best.pth")
+            print(f"Saved best model with L2: {best_acc:.4f}")
 
                         
                          
